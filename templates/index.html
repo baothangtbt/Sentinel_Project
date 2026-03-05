@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel Pro - Biểu Đồ Giá</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="max-w-6xl mx-auto py-10 px-4">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-extrabold text-blue-800">Sentinel Price Tracker</h1>
+            <a href="{{ url_for('scan') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-all">
+                🔄 Cập Nhật Giá Toàn Bộ
+            </a>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm mb-10 border border-slate-200">
+            <form action="{{ url_for('add') }}" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" name="name" placeholder="Tên sản phẩm..." required class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="url" name="url" placeholder="Link Shopee/Web..." required class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                <button type="submit" class="bg-emerald-600 text-white font-bold rounded-xl p-3 hover:bg-emerald-700 transition">🚀 Theo Dõi Ngay</button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6">
+            {% for product in products %}
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                        <a href="{{ product.url }}" target="_blank" class="text-lg font-bold text-slate-700 hover:text-blue-600 transition">{{ product.name }}</a>
+                        <p class="text-sm text-slate-400 mt-1">Lần cuối: {{ product.history[-1].timestamp.strftime('%H:%M %d/%m') if product.history else 'Chưa quét' }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-black text-emerald-600">{{ product.latest_price | vnd }}</p>
+                        <a href="{{ url_for('delete', id=product.id) }}" class="text-xs text-red-400 hover:text-red-600 underline" onclick="return confirm('Xóa sản phẩm này?')">Gỡ bỏ</a>
+                    </div>
+                </div>
+
+                <div class="h-48 w-full mt-4">
+                    <canvas id="chart-{{ product.id }}"></canvas>
+                </div>
+            </div>
+
+            <script>
+                (function() {
+                    const ctx = document.getElementById('chart-{{ product.id }}').getContext('2d');
+                    // Lấy dữ liệu từ Backend gửi qua Jinja2
+                    const labels = [{% for h in product.ordered_history %}"{{ h.timestamp.strftime('%d/%m') }}",{% endfor %}];
+                    const dataPoints = [{% for h in product.ordered_history %}{{ h.price }},{% endfor %}];
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Giá (VND)',
+                                data: dataPoints,
+                                borderColor: '#059669', // Emerald 600
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4, // Tạo độ cong cho đường kẻ
+                                pointRadius: 4,
+                                pointBackgroundColor: '#fff',
+                                pointBorderColor: '#059669'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: false, grid: { display: false } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                })();
+            </script>
+            {% endfor %}
+        </div>
+    </div>
+
+</body>
+</html>
